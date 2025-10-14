@@ -2,11 +2,27 @@
 
 import { useState, useEffect, useRef } from "react";
 
+interface Scoring {
+  in_word: boolean
+  correct_idx: boolean
+}
+
+interface CharacterInfo {
+  char: string
+  scoring: Scoring
+}
+
+interface WordleResponse {
+  guess: string
+  was_correct: boolean
+  character_info: CharacterInfo[]
+}
+
 const ROWS = 6;
 const TILES_PER_ROW = 5;
-const TARGET = 'REACT'
 
-function Tile({ letter, color, isAnimating, delay, rowIsRevealed }: { letter?: string, color?: string, isAnimating?: boolean, delay?: number, rowIsRevealed?: boolean| undefined }) {
+function Tile({ letter, color, isAnimating, delay, rowIsRevealed }:
+  { letter?: string, color?: string, isAnimating?: boolean, delay?: number, rowIsRevealed?: boolean| undefined }) {
   let bgColor = ''
   const style = { animationDelay: `${delay}ms`}
   let borderColor = ''
@@ -27,7 +43,9 @@ function Tile({ letter, color, isAnimating, delay, rowIsRevealed }: { letter?: s
     bgColor = 'bg-[#787c7e]'
   }
 
-  const classes = `flex justify-center items-center border-2 w-16 h-16 text-2xl uppercase ${borderColor} ${rowIsRevealed ? 'text-white' : 'text-gray-900'} ${rowIsRevealed ? bgColor : ''} ${isAnimating ? 'animate-flip' : ''}`
+  const classes = `flex justify-center items-center border-2 w-16 h-16 text-2xl uppercase
+  ${borderColor} ${rowIsRevealed ? 'text-white' : 'text-gray-900'}
+  ${rowIsRevealed ? bgColor : ''} ${isAnimating ? 'animate-flip' : ''}`
 
   return (
     <div className={classes} style={style}>{letter}</div>
@@ -37,9 +55,9 @@ function Tile({ letter, color, isAnimating, delay, rowIsRevealed }: { letter?: s
 export default function Game() {
   const [guesses, setGuesses] = useState(Array(6).fill(''))
   const [colors, setColors] = useState(Array(6).fill(null).map(() => Array(5).fill(null))) //color of 6 row, 5 tile
-  const [currRow, setCurrRow] = useState(0)
+  const [currRow, setCurrRow] = useState< number >(0)
   const [gameStatus, setGameStatus] = useState<'playing' | 'won' | 'lost'>('playing')
-  const [animateRow, setAnimateRow] = useState< number| null >(null)
+  const [animateRow, setAnimateRow] = useState< number | null >(null)
   const [revealedRows, setRevealedRows] = useState<Set<number>>(new Set())
 
   const guessesRef = useRef(guesses)
@@ -52,27 +70,47 @@ export default function Game() {
   colorsRef.current = colors
   gameRef.current = gameStatus
 
-  const checkGuess = (guess: string, target: string) => {
-    let i = 0
-    const seen = new Set([...target])
+  // const checkGuess = (guess: string, target: string) => {
+  //   let i = 0
+  //   const seen = new Set([...target])
 
+  //   const newColors = [...colorsRef.current]
+  //   for(i = 0; i < TILES_PER_ROW; i++) {
+  //     if (guess[i].toUpperCase() === target[i]) {
+  //       newColors[rowRef.current][i] = 'green'
+  //     }
+  //     else if (seen.has(guess[i].toUpperCase())) {
+  //       newColors[rowRef.current][i] = 'yellow'
+  //     }
+  //     else {
+  //       newColors[rowRef.current][i] = 'gray'
+  //     }
+  //   }
+  //   setColors(newColors)
+  // }
+
+  const correctGuess = (data: WordleResponse) => {
+    
     const newColors = [...colorsRef.current]
-    for(i = 0; i < TILES_PER_ROW; i++) {
-      if (guess[i].toUpperCase() === target[i]) {
-        newColors[rowRef.current][i] = 'green'
+    data.character_info.forEach((info: CharacterInfo, index: number) => {
+      const inWord = info.scoring.in_word
+      const correctIndex = info.scoring.correct_idx
+
+      if(correctIndex) {
+        newColors[rowRef.current][index] = 'green'
       }
-      else if (seen.has(guess[i].toUpperCase())) {
-        newColors[rowRef.current][i] = 'yellow'
+      else if (inWord) {
+        newColors[rowRef.current][index] = 'yellow' 
       }
       else {
-        newColors[rowRef.current][i] = 'gray'
+        newColors[rowRef.current][index] = 'gray'
       }
-    }
+    })
     setColors(newColors)
   }
 
   useEffect(() => {
-    const handleTyping = (e: KeyboardEvent) => {
+    const handleTyping = async (e: KeyboardEvent) => {
       if (gameRef.current !== 'playing') return
 
       if(guessesRef.current[rowRef.current].length < 5 && /^[a-zA-Z]$/.test(e.key)) {
@@ -84,7 +122,17 @@ export default function Game() {
       if(e.key === 'Enter') {
         if(guessesRef.current[rowRef.current].length === 5) {
           const current = rowRef.current
-          checkGuess(guessesRef.current[rowRef.current], TARGET)
+          // checkGuess(guessesRef.current[rowRef.current], TARGET)
+          const response = await fetch('api', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ guess: guessesRef.current[rowRef.current]})
+            })
+          const data = await response.json()
+          console.log('Output: ' + data)
+          correctGuess(data)
           setAnimateRow(current)
 
           setTimeout(() => {
@@ -92,7 +140,7 @@ export default function Game() {
             setRevealedRows(prev => new Set(prev).add(current))
           }, 900)
           
-          if (guessesRef.current[rowRef.current].toUpperCase() === TARGET) {
+          if (data.was_correct) {
             setGameStatus('won')
           }
           else if (rowRef.current === ROWS - 1) {
@@ -121,7 +169,7 @@ export default function Game() {
 
   const messages = {
     won: 'You won! 🎉',
-    lost: `Game over! The word was ${TARGET}`
+    lost: `Game over! Nice try!`
   }
 
   const msg_colors = {
@@ -150,7 +198,8 @@ export default function Game() {
             ))}
           </div>
           {gameStatus !== 'playing' && (
-            <div className={`text-center mt-6 text-2xl font-bold ${msg_colors[gameStatus]}`}>{messages[gameStatus]}</div>
+            <div className={`text-center mt-6 text-2xl font-bold 
+            ${msg_colors[gameStatus]}`}>{messages[gameStatus]}</div>
           )}
         </div>
       </div>
