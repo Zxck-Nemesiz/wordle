@@ -70,25 +70,6 @@ export default function Game() {
   colorsRef.current = colors
   gameRef.current = gameStatus
 
-  // const checkGuess = (guess: string, target: string) => {
-  //   let i = 0
-  //   const seen = new Set([...target])
-
-  //   const newColors = [...colorsRef.current]
-  //   for(i = 0; i < TILES_PER_ROW; i++) {
-  //     if (guess[i].toUpperCase() === target[i]) {
-  //       newColors[rowRef.current][i] = 'green'
-  //     }
-  //     else if (seen.has(guess[i].toUpperCase())) {
-  //       newColors[rowRef.current][i] = 'yellow'
-  //     }
-  //     else {
-  //       newColors[rowRef.current][i] = 'gray'
-  //     }
-  //   }
-  //   setColors(newColors)
-  // }
-
   const correctGuess = (data: WordleResponse) => {
     
     const newColors = [...colorsRef.current]
@@ -131,8 +112,17 @@ export default function Game() {
             body: JSON.stringify({ guess: guessesRef.current[rowRef.current]})
             })
           const data = await response.json()
-          console.log('Output: ' + data)
-          correctGuess(data)
+
+          if (data.was_correct) {
+            setGameStatus('won')
+            const newColors = [...colorsRef.current]
+            newColors[rowRef.current] = Array(TILES_PER_ROW).fill('green')
+            setColors(newColors)
+          }
+          else {
+            correctGuess(data)
+          }
+
           setAnimateRow(current)
 
           setTimeout(() => {
@@ -140,10 +130,7 @@ export default function Game() {
             setRevealedRows(prev => new Set(prev).add(current))
           }, 900)
           
-          if (data.was_correct) {
-            setGameStatus('won')
-          }
-          else if (rowRef.current === ROWS - 1) {
+          if (rowRef.current === ROWS - 1) {
             setGameStatus('lost')
           }
           else {
