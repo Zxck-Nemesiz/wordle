@@ -26,54 +26,54 @@ body {
 }
 
 @theme {
-  --animate-flip: flip 0.5s ease-out;
+  --animate-tile-flip: tileFlip 0.7s ease-out;
   --animate-shake: shake 0.5s ease-in-out;
   --animate-toast: toast 2s ease-in-out;
   --animate-pop: pop 0.1s ease-out;
+}
 
-  @keyframes flip {
-    0% {
-      transform: rotateX(0);
-    }
-    50% {
-      transform: rotateX(90deg);
-    }
-    100% {
-      transform: rotateX(180deg);
-    }
+@keyframes tileFlip {
+  0% {
+    transform: rotateX(0);
   }
-
-  @keyframes shake {
-    0%, 100% {
-      transform: translateX(0);
-    }
-    25% { 
-      transform: translateX(-10px); 
-    }
-    75% { 
-      transform: translateX(10px); 
-    }
+  50% {
+    transform: rotateX(90deg);
   }
-
-  @keyframes toast {
-    0%, 100% { 
-      opacity: 0; transform: translateY(-20px);
-     }
-    10%, 90% { 
-      opacity: 1; transform: translateY(0);
-     }
+  100% {
+    transform: rotateX(180deg);
   }
+}
 
-  @keyframes pop {
-    0% {
-      transform: scale(1);
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% { 
+    transform: translateX(-10px); 
+  }
+  75% { 
+    transform: translateX(10px); 
+  }
+}
+
+@keyframes toast {
+  0%, 100% { 
+    opacity: 0; transform: translateY(-20px);
     }
-    50% {
-      transform: scale(1.15);
+  10%, 90% { 
+    opacity: 1; transform: translateY(0);
     }
-    100% {
-      transform: scale(1);
-    }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 

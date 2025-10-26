@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from "react";
-// import { flushSync } from 'react-dom';
+import { useState, useEffect, useRef, memo } from "react";
 
 const ROWS = 6;
 const TILES_PER_ROW = 5;
@@ -18,7 +17,7 @@ const getColorClass = (color?: string) => {
   return 'bg-gray-400'
 }
 
-function Key({ letter, onClick, color }: { letter: string, onClick: (letter: string) => void, color?: string }) {
+const Key = memo(function Key({ letter, onClick, color }: { letter: string, onClick: (letter: string) => void, color?: string }) {
   const isWide = letter === 'ENTER' || letter === 'BACKSPACE'
   const width = isWide 
   ? 'w-16 sm:w-20 md:w-24 lg:w-32' 
@@ -44,7 +43,7 @@ function Key({ letter, onClick, color }: { letter: string, onClick: (letter: str
       )}
     </button>
   )
-}
+})
 
 function Tile({ letter, color, isAnimating, delay, rowIsRevealed, isPop }:
   { letter?: string, color?: string, isAnimating?: boolean, delay?: number, rowIsRevealed?: boolean, isPop?: boolean }) {
@@ -54,7 +53,7 @@ function Tile({ letter, color, isAnimating, delay, rowIsRevealed, isPop }:
 
   if (!letter) {
     borderColor = 'border-gray-300' 
-  } else if (!rowIsRevealed) {
+  } else if (!color) {
     borderColor = 'border-gray-500'
   } else {
     borderColor = 'border-gray-600' 
@@ -62,14 +61,18 @@ function Tile({ letter, color, isAnimating, delay, rowIsRevealed, isPop }:
   
   const classes = `flex justify-center items-center border-2 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 
   text-xl sm:text-2xl uppercase
-  ${borderColor} ${rowIsRevealed ? 'text-white' : 'text-gray-900'}
-  ${rowIsRevealed ? bgColor : ''} ${isAnimating ? 'animate-flip' : ''}
+  ${borderColor} 
+  ${color ? 'text-white' : 'text-gray-900'}
+  ${(rowIsRevealed || isAnimating) ? bgColor : ''}
+  ${isAnimating ? 'animate-tile-flip' : ''}
   ${isPop ? 'animate-pop' : ''}`
+
 
   return (
     <div className={classes} style={style}>{letter}</div>
   )
 }
+
 
 export default function Game() {
   const [guesses, setGuesses] = useState(Array(6).fill(''))
@@ -188,15 +191,32 @@ export default function Game() {
 
       const newColors = [...colorsRef.current] 
       newColors[current] = rowColors
-      setColors(newColors)
       updateKeyColors(guessesRef.current[rowRef.current], rowColors)
 
+      // setColors(newColors)
+      // setAnimateRow(current)
+      // setTimeout(() => {
+      //   setAnimateRow(null)
+      //   setRevealedRows(prev => new Set(prev).add(current))
+      // }, 900)
       setAnimateRow(current)
+
+      // Set colors halfway through flip (at 90deg)
+      setTimeout(() => {
+        const newColors = [...colorsRef.current] 
+        newColors[current] = rowColors
+        setColors(newColors)
+      }, 250)
 
       setTimeout(() => {
         setAnimateRow(null)
         setRevealedRows(prev => new Set(prev).add(current))
-      }, 900)
+      }, 1500)
+
+      setTimeout(() => {
+        setAnimateRow(null)
+        setRevealedRows(prev => new Set(prev).add(current))
+      }, 1500)
 
       if (guessesRef.current[rowRef.current].toUpperCase() === targetRef.current) {
         setGameStatus('won')
@@ -310,7 +330,7 @@ export default function Game() {
               <div key={i} className={`flex gap-0.5 md:gap-1 ${i === shakingRow ? 'animate-shake' : ''}`}>
                 {Array.from({length: TILES_PER_ROW}, (_, tiles_index) => (
                   <Tile 
-                  key={`${i}-${tiles_index}-${guesses[i][tiles_index] || 'empty'}`}
+                  key={tiles_index}
                   letter={guesses[i][tiles_index]} 
                   color={colors[i][tiles_index]} 
                   isAnimating={i === animateRow} 
