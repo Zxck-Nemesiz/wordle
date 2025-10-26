@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from "react";
+// import { flushSync } from 'react-dom';
 
 const ROWS = 6;
 const TILES_PER_ROW = 5;
@@ -19,19 +20,34 @@ const getColorClass = (color?: string) => {
 
 function Key({ letter, onClick, color }: { letter: string, onClick: (letter: string) => void, color?: string }) {
   const isWide = letter === 'ENTER' || letter === 'BACKSPACE'
-  const width = isWide ? 'w-32' : 'w-12'
+  const width = isWide 
+  ? 'w-16 sm:w-20 md:w-24 lg:w-32' 
+  : 'w-7 sm:w-8 md:w-10 lg:w-12'
   const bgColor = getColorClass(color)
 
-  const classes = `border-2 ${width} ${bgColor} h-12 p-1 hover:brightness-110 active:scale-95 transition-transform`
+  const classes = `border-2 ${width} ${bgColor} h-10 sm:h-11 md:h-12 text-xs sm:text-sm md:text base
+  p-1 hover:brightness-110 active:scale-95 transition-transform`
   return (
     <button onClick={() => onClick(letter)} className={classes}>
-      {letter}
+      {letter === 'BACKSPACE' ? (
+        <>
+        <span className="hidden sm:inline text-xs sm:text-sm">BACKSPACE</span>
+        <span className="sm:hidden">←</span>
+        </>
+      ) : letter === 'ENTER' ? (
+        <>
+        <span className="hidden sm:inline text-xs sm:text-sm">ENTER</span>
+        <span className="sm:hidden text-xl">↵</span>
+        </>
+      ) : (
+        letter
+      )}
     </button>
   )
 }
 
-function Tile({ letter, color, isAnimating, delay, rowIsRevealed }:
-  { letter?: string, color?: string, isAnimating?: boolean, delay?: number, rowIsRevealed?: boolean| undefined }) {
+function Tile({ letter, color, isAnimating, delay, rowIsRevealed, isPop }:
+  { letter?: string, color?: string, isAnimating?: boolean, delay?: number, rowIsRevealed?: boolean, isPop?: boolean }) {
   const bgColor = getColorClass(color)
   const style = { animationDelay: `${delay}ms`}
   let borderColor = ''
@@ -44,9 +60,11 @@ function Tile({ letter, color, isAnimating, delay, rowIsRevealed }:
     borderColor = 'border-gray-600' 
   }
   
-  const classes = `flex justify-center items-center border-2 w-16 h-16 text-2xl uppercase
+  const classes = `flex justify-center items-center border-2 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 
+  text-xl sm:text-2xl uppercase
   ${borderColor} ${rowIsRevealed ? 'text-white' : 'text-gray-900'}
-  ${rowIsRevealed ? bgColor : ''} ${isAnimating ? 'animate-flip' : ''}`
+  ${rowIsRevealed ? bgColor : ''} ${isAnimating ? 'animate-flip' : ''}
+  ${isPop ? 'animate-pop' : ''}`
 
   return (
     <div className={classes} style={style}>{letter}</div>
@@ -272,31 +290,38 @@ export default function Game() {
   return (
     <>
       <div className='bg-gray-100 min-h-[100dvh] flex flex-col justify-center items-center'>
-        <div className="max-w-lg w-full p-6">
-          <div className="mb-12 text-4xl text-center font-bold border-b-2 pb-4">Wordle</div>
+        <div className="max-w-lg w-full p-2 sm:p-4 md:p-6">
+          <div className="mb-6 sm:mb-8 md:mb-12 
+          text-2xl sm:text-3xl md:text-4xl
+          text-center font-bold border-b-2 
+          pb-2 sm:pb-3 md:pb-4">
+          Wordle
+          </div>
           {notification && (
-            <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 
-                            bg-gray-800 text-white px-6 py-3 rounded-lg 
-                            shadow-lg font-semibold animate-toast">
-              {notification}
+            <div className="fixed top-4 sm:top-6 md:top-0 
+            left-1/2 -translate-x-1/2 z-50 
+          bg-gray-800 text-white px-4 py-2 sm:px-6 sm:py-3
+            rounded-lg shadow-lg text-sm sm:text-base font-semibold animate-toast">
+            {notification}
             </div>
           )}
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-2 sm:gap3 md:gap-4">
             {Array.from({length: ROWS}, (_, i) => (
-              <div key={i} className={`flex gap-1 ${i === shakingRow ? 'animate-shake' : ''}`}>
+              <div key={i} className={`flex gap-0.5 md:gap-1 ${i === shakingRow ? 'animate-shake' : ''}`}>
                 {Array.from({length: TILES_PER_ROW}, (_, tiles_index) => (
                   <Tile 
-                  key={tiles_index} 
+                  key={`${i}-${tiles_index}-${guesses[i][tiles_index] || 'empty'}`}
                   letter={guesses[i][tiles_index]} 
                   color={colors[i][tiles_index]} 
                   isAnimating={i === animateRow} 
                   delay={tiles_index * 100}
-                  rowIsRevealed={revealedRows.has(i)}/>
-                ))}
+                  rowIsRevealed={revealedRows.has(i)}
+                  isPop={guesses[i][tiles_index] && !revealedRows.has(i)}/>
+                  ))}
               </div>
             ))}
           </div>
-          <div className="flex flex-col items-center gap-1 mt-8">
+          <div className="flex flex-col items-center gap-0.5 sm:gap-1 mt-8">
             {KEYBOARD_ROWS.map((row, rowIndex) => (
               <div key={rowIndex} className="flex gap-1">
                 {row.map(key => (
